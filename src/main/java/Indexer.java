@@ -1,3 +1,4 @@
+import indexer.IDFEvaluator;
 import indexer.WordCounter;
 import org.apache.hadoop.conf.Configuration;
 
@@ -10,5 +11,6 @@ public class Indexer {
         Configuration conf = new Configuration();
 
         WordCounter.run(conf, args, true);
+        IDFEvaluator.run(conf, args, true);
     }
 }
