@@ -1,3 +1,4 @@
+import indexer.DocVectorizer;
 import indexer.IDFEvaluator;
 import indexer.WordCounter;
 import org.apache.hadoop.conf.Configuration;
@@ -12,5 +13,6 @@ public class Indexer {
 
         WordCounter.run(conf, args, true);
         IDFEvaluator.run(conf, args, true);
+        DocVectorizer.run(conf, args, true);
     }
 }
