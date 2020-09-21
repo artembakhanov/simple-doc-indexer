@@ -13,7 +13,7 @@ public class Word {
 
     public Word(String[] params) {
         this.word = params[0];
-        this.idf = Integer.parseInt(params[1]);
+        this.idf = Double.parseDouble(params[1]);
         this.id = Integer.parseInt(params[2]);
     }
 

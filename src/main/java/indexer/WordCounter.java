@@ -1,6 +1,12 @@
 package indexer;
 
+import com.sun.tools.javac.util.Pair;
+import lib.PartPathFilter;
+import lib.Tokenizer;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -10,7 +16,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.json.JSONObject;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 public class WordCounter {
     public static class WordCounterMapper extends Mapper<Object, Text, Text, Text> {
@@ -51,6 +58,24 @@ public class WordCounter {
         }
     }
 
+    public static Pair<Integer, Double> countDocs(Configuration conf, FileStatus[] files) throws IOException {
+        FileSystem fileSystem = FileSystem.get(conf);
+        int counter = 0;
+        long wordCounter = 0;
+        for (FileStatus file: files) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(file.getPath())));
+            String line = "";
+            while ((line = reader.readLine()) != null) {
+                JSONObject object = new JSONObject(line);
+
+                wordCounter += Tokenizer.tokenize(object.getString("text")).length;
+                counter += 1;
+            }
+        }
+
+        return new Pair<>(counter, (double) (wordCounter / counter));
+    }
+
     public static boolean run(Configuration conf, String[] args, boolean verbose) throws IOException, ClassNotFoundException, InterruptedException {
         Job job = Job.getInstance(conf, "Word Counter");
         job.setJarByClass(WordCounter.class);
@@ -65,6 +90,21 @@ public class WordCounter {
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1] + "/temp"));
 
-        return job.waitForCompletion(verbose);
+        boolean result = job.waitForCompletion(verbose);
+
+        if (result) {
+            FileSystem fileSystem = FileSystem.get(conf);
+            FileStatus[] docs = fileSystem.listStatus(new Path(args[0].replaceAll("/\\*", "")));
+            Pair<Integer, Double> docParams = countDocs(conf, docs);
+
+            FSDataOutputStream out = fileSystem.create(new Path(args[1], "doc_info"));
+            BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
+            bufferedWriter.write(docParams.fst + "\t" + docParams.snd);
+            bufferedWriter.newLine();
+            bufferedWriter.close();
+            fileSystem.close();
+        }
+
+        return result;
     }
 }

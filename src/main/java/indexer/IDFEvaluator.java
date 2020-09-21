@@ -1,6 +1,9 @@
 package indexer;
 
+import com.sun.tools.javac.util.Pair;
+import lib.DocInfo;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -9,7 +12,9 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class IDFEvaluator {
     public static class IDFMapper extends Mapper<Object, Text, Text, Text> {
@@ -21,13 +26,22 @@ public class IDFEvaluator {
 
     public static class IDFCombiner extends Reducer<Text, Text, Text, Text> {
         private static int counter = 0;
+        private static double docNumber;
+        private static double docAverage;
+
+        public void setup(Context context) {
+            docNumber = Double.parseDouble(context.getConfiguration().get("docNumber"));
+            docAverage = Double.parseDouble(context.getConfiguration().get("docAverage"));
+        }
 
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             int docCounter = 0;
             for (Text ignored : values) {
                 docCounter += 1;
             }
-            context.write(key, new Text(docCounter + "\t" + counter)); // word - how many docs - word_id
+
+            double idf = 1 / Math.log(docNumber / docCounter);
+            context.write(key, new Text(idf + "\t" + counter)); // word - idf - word_id
             counter += 1;
         }
     }
@@ -41,6 +55,8 @@ public class IDFEvaluator {
     }
 
     public static boolean run(Configuration conf, String[] args, boolean verbose) throws IOException, ClassNotFoundException, InterruptedException {
+        DocInfo.getInfo(conf, args);
+
         Job job = Job.getInstance(conf, "IDF Evaluator");
         job.setJarByClass(IDFEvaluator.class);
         job.setMapperClass(IDFMapper.class);
@@ -50,6 +66,7 @@ public class IDFEvaluator {
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[1] + "/temp"));
         FileOutputFormat.setOutputPath(job, new Path(args[1] + "/final"));
+
         return job.waitForCompletion(verbose);
     }
 }

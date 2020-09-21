@@ -1,11 +1,10 @@
 package indexer;
 
+
+import lib.PartPathFilter;
 import lib.Word;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -38,7 +37,7 @@ public class DocVectorizer {
     }
 
     public static class DocVectorizerCombiner extends Reducer<Text, Text, Text, Text> {
-        private static final HashMap<String, Word> words = new HashMap();
+        private static final HashMap<String, Word> words = new HashMap<>();
 
         public void setup(Context context) throws IOException {
             FileSystem fileSystem = FileSystem.get(context.getConfiguration());
@@ -46,7 +45,6 @@ public class DocVectorizer {
 
             for (URI cacheFile : cacheFiles) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(new Path(cacheFile.getPath()))));
-
 
                 String line = "";
                 while ((line = reader.readLine()) != null) {
@@ -105,11 +103,7 @@ public class DocVectorizer {
         FileOutputFormat.setOutputPath(job, new Path(args[1] + "/idf"));
 
 
-        FileStatus[] files = fileSystem.listStatus(new Path(args[1] + "/final"), new PathFilter() {
-            public boolean accept(Path path) {
-                return path.getName().startsWith("part");
-            }
-        });
+        FileStatus[] files = fileSystem.listStatus(new Path(args[1] + "/final"), new PartPathFilter());
         for (FileStatus file : files) {
             job.addCacheFile(file.getPath().toUri());
         }
