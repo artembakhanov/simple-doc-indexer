@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import lib.DocInfo;
+import lib.DocumentVector;
 import lib.Vocabulary;
 import lib.Word;
 import org.apache.hadoop.conf.Configuration;
@@ -17,6 +18,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.json.JSONObject;
 
 public class CoreQuery {
 
@@ -36,22 +38,24 @@ public class CoreQuery {
             double relevance = 0.0;
             // I do not create hashmap and search for words in query because it would take the same amount of time
             // as to create a HashMap for each of the word in the document
+            int k1 = 2;
+            double b = 0.75;
+            JSONObject object = DocumentVector.parseFromLine(line[1]);
+            String vectorized = object.getString("vectorized");
+            int docLength = object.getInt("docLength");
             if (context.getConfiguration().get("solver").equals("BM25")) {
-                int k1 = 2;
-                double b = 0.75;
-                for (String element : line[1].split(";")) {
+                for (String element : vectorized.split(";")) {
                     Integer idx = Integer.parseInt(element.split(":")[0]);
                     if (query.containsKey(idx)) {
                         Double tfidf = Double.parseDouble(element.split(":")[1]);
                         Double idf = query.get(idx);
-                        int size = Integer.parseInt(line[0].split(":")[3]);
                         double avSize = Double.parseDouble(context.getConfiguration().get("avgdl"));
                         // Multiplying by itself is always faster than Math.pow()
-                        relevance += idf * tfidf*(k1 + 1) / (tfidf + k1* (1 + b * (size/avSize - 1)));
+                        relevance += idf * tfidf*(k1 + 1) / (tfidf + k1* (1 + b * (docLength / avSize - 1)));
                     }
                 }
             } else {
-                for (String element : line[1].split(";")) {
+                for (String element : vectorized.split(";")) {
                     Integer idx = Integer.parseInt(element.split(":")[0]);
                     if (query.containsKey(idx)) {
                         relevance += query.get(idx) * Double.parseDouble(element.split(":")[1]);
@@ -59,7 +63,7 @@ public class CoreQuery {
                 }
             }
             if (relevance != 0.0) {
-                tmapMap.put(relevance, line[0]);
+                tmapMap.put(relevance, line[1]);
             }
 
             // Getting top N pages on each step. Following this tutorial:
@@ -72,9 +76,11 @@ public class CoreQuery {
         public void cleanup(Context context) throws IOException, InterruptedException {
             for (Map.Entry<Double, String> entry : tmapMap.entrySet()) {
                 Double relevance = entry.getKey();
-                String nameID = entry.getValue();
+                JSONObject object = DocumentVector.parseFromLine(entry.getValue());
 
-                context.write(new Text(nameID), new DoubleWritable(relevance));
+                context.write(
+                        new Text("Title: " + object.getString("title") + "\tURL: " + object.getString("url")),
+                        new DoubleWritable(relevance));
             }
         }
     }

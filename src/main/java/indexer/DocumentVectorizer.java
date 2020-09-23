@@ -1,6 +1,7 @@
 package indexer;
 
 
+import lib.DocumentVector;
 import lib.PartPathFilter;
 import lib.Word;
 import org.apache.hadoop.conf.Configuration;
@@ -19,8 +20,8 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.*;
 
-public class DocVectorizer {
-    public static class DocVectorizerMapper extends Mapper<Object, Text, Text, Text> {
+public class DocumentVectorizer {
+    public static class DocumentVectorizerMapper extends Mapper<Object, Text, Text, Text> {
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String line = value.toString();
             JSONObject object = new JSONObject(line);
@@ -31,12 +32,12 @@ public class DocVectorizer {
 
             String[] tokens = text.split("[^\\p{L}]+");
             for (String token : tokens) {
-                context.write(new Text(id + ":" + title + ":" + url + ":" + tokens.length), new Text(token.toLowerCase()));
+                context.write(new Text(DocumentVector.toLine(id, title, url, tokens.length)), new Text(token.toLowerCase()));
             }
         }
     }
 
-    public static class DocVectorizerCombiner extends Reducer<Text, Text, Text, Text> {
+    public static class DocumentVectorizerCombiner extends Reducer<Text, Text, Text, Text> {
         private static final HashMap<String, Word> words = new HashMap<>();
 
         public void setup(Context context) throws IOException {
@@ -52,8 +53,6 @@ public class DocVectorizer {
                     words.put(params[0], new Word(params));
                 }
             }
-
-            System.out.println(words.toString());
         }
 
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
@@ -75,13 +74,13 @@ public class DocVectorizer {
 
             String[] arrayTemp = new String[textList.size()];
             textList.toArray(arrayTemp);
-            context.write(key, new Text(String.join(";", arrayTemp)));
+            context.write(new Text("d"), new Text(DocumentVector.toLine(key.toString(), String.join(";", arrayTemp))));
         }
     }
 
-    public static class DocVectorizerReducer extends Reducer<Text, Text, Text, Text> {
+    public static class DocumentVectorizerReducer extends Reducer<Text, Text, Text, Text> {
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for (Text value: values) {
+            for (Text value : values) {
                 context.write(key, value);
             }
         }
@@ -91,10 +90,10 @@ public class DocVectorizer {
         FileSystem fileSystem = FileSystem.get(conf);
 
         Job job = Job.getInstance(conf, "Document Vectorizer");
-        job.setJarByClass(DocVectorizer.class);
-        job.setMapperClass(DocVectorizerMapper.class);
-        job.setCombinerClass(DocVectorizerCombiner.class);
-        job.setReducerClass(DocVectorizerReducer.class);
+        job.setJarByClass(DocumentVectorizer.class);
+        job.setMapperClass(DocumentVectorizerMapper.class);
+        job.setCombinerClass(DocumentVectorizerCombiner.class);
+        job.setReducerClass(DocumentVectorizerReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         job.setMapOutputKeyClass(Text.class);
