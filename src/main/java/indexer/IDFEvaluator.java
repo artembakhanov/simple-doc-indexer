@@ -27,11 +27,11 @@ public class IDFEvaluator {
     public static class IDFCombiner extends Reducer<Text, Text, Text, Text> {
         private static int counter = 0;
         private static double docNumber;
-        private static double docAverage;
+        private static String idfType;
 
         public void setup(Context context) {
             docNumber = Double.parseDouble(context.getConfiguration().get("docNumber"));
-            docAverage = Double.parseDouble(context.getConfiguration().get("docAverage"));
+            idfType = context.getConfiguration().get("idf-type");
         }
 
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
@@ -40,7 +40,7 @@ public class IDFEvaluator {
                 docCounter += 1;
             }
 
-            double idf = 1 / Math.log(docNumber / docCounter);
+            double idf = idfType.equals("log") ? 1 / Math.log(docNumber / docCounter) : docCounter;
             context.write(key, new Text(idf + "\t" + counter)); // word - idf - word_id
             counter += 1;
         }
