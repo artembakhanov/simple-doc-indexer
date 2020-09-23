@@ -31,7 +31,7 @@ public class DocVectorizer {
 
             String[] tokens = text.split("[^\\p{L}]+");
             for (String token : tokens) {
-                context.write(new Text(id + ":" + title + ":" + url), new Text(token.toLowerCase()));
+                context.write(new Text(id + ":" + title + ":" + url + ":" + tokens.length), new Text(token.toLowerCase()));
             }
         }
     }

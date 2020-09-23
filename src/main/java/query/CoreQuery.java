@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import lib.DocInfo;
 import lib.Vocabulary;
 import lib.Word;
 import org.apache.hadoop.conf.Configuration;
@@ -35,10 +36,26 @@ public class CoreQuery {
             double relevance = 0.0;
             // I do not create hashmap and search for words in query because it would take the same amount of time
             // as to create a HashMap for each of the word in the document
-            for (String element : line[1].split(";")) {
-                Integer idx = Integer.parseInt(element.split(":")[0]);
-                if (query.containsKey(idx)) {
-                    relevance += query.get(idx) * Double.parseDouble(element.split(":")[1]);
+            if (context.getConfiguration().get("solver").equals("BM25")) {
+                int k1 = 2;
+                double b = 0.75;
+                for (String element : line[1].split(";")) {
+                    Integer idx = Integer.parseInt(element.split(":")[0]);
+                    if (query.containsKey(idx)) {
+                        Double tfidf = Double.parseDouble(element.split(":")[1]);
+                        Double idf = query.get(idx);
+                        int size = Integer.parseInt(line[0].split(":")[3]);
+                        double avSize = Double.parseDouble(context.getConfiguration().get("avgdl"));
+                        // Multiplying by itself is always faster than Math.pow()
+                        relevance += idf * tfidf*(k1 + 1) / (tfidf + k1* (1 + b * (size/avSize - 1)));
+                    }
+                }
+            } else {
+                for (String element : line[1].split(";")) {
+                    Integer idx = Integer.parseInt(element.split(":")[0]);
+                    if (query.containsKey(idx)) {
+                        relevance += query.get(idx) * Double.parseDouble(element.split(":")[1]);
+                    }
                 }
             }
             if (relevance != 0.0) {
@@ -104,10 +121,22 @@ public class CoreQuery {
         Configuration conf = new Configuration();
 
         HashMap<String, Word> words = Vocabulary.loadVocabulary(conf, args[0]);
+        String solver = "BM25";
+        if (args.length > 4) {
+            solver = args[4];
+        }
         Preprocessor preprocessor = new Preprocessor();
-        preprocessor.preprocess(args[3], words);
+        if (solver.equals("BM25")) {
+            preprocessor.preprocessBM25(args[3], words);
+        } else {
+            preprocessor.preprocess(args[3], words);
+        }
+        conf.set("solver", solver);
         conf.set("query", preprocessor.getString());
         conf.set("n", args[2]);
+        conf.set("avgdl", String.valueOf(DocInfo.getInfo(conf, args[0]).snd));
+
+
 
         Job job = Job.getInstance(conf, "Query Documents");
         job.setSortComparatorClass(DoubleReversedComparator.class);

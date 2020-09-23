@@ -11,9 +11,9 @@ import java.io.InputStreamReader;
 
 public class DocInfo {
 
-    public static Pair<Integer, Double> getInfo(Configuration conf, String[] args) throws IOException {
+    public static Pair<Integer, Double> getInfo(Configuration conf, String indexerOutputPath) throws IOException {
         FileSystem fileSystem = FileSystem.get(conf);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(new Path(args[1], "doc_info"))));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(new Path(indexerOutputPath, "doc_info"))));
         String[] line = reader.readLine().split("\t");
 
         Pair<Integer, Double> docInfo = new Pair<>(Integer.parseInt(line[0]), Double.parseDouble(line[1]));

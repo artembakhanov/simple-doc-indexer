@@ -55,7 +55,7 @@ public class IDFEvaluator {
     }
 
     public static boolean run(Configuration conf, String[] args, boolean verbose) throws IOException, ClassNotFoundException, InterruptedException {
-        DocInfo.getInfo(conf, args);
+        DocInfo.getInfo(conf, args[1]);
 
         Job job = Job.getInstance(conf, "IDF Evaluator");
         job.setJarByClass(IDFEvaluator.class);
