@@ -6,9 +6,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import lib.*;
-import lib.DocumentVector;
-import lib.Vocabulary;
-import lib.Word;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
@@ -45,11 +42,11 @@ public class CoreQuery {
             JSONObject object = DocumentVector.parseFromLine(line[1]);
             String vectorized = object.getString("vectorized");
             int docLength = object.getInt("docLength");
-            if (context.getConfiguration().get("solver").equals("BM25")) {
+            if (solver.equals("BM25")) {
                 for (String element : vectorized.split(";")) {
                     Integer idx = Integer.parseInt(element.split(":")[0]);
                     if (query.containsKey(idx)) {
-                        Double tfidf = Double.parseDouble(element.split(":")[1]);
+                        double tfidf = Double.parseDouble(element.split(":")[1]);
                         Double idf = query.get(idx);
                         double avSize = Double.parseDouble(context.getConfiguration().get("avgdl"));
                         // Multiplying by itself is always faster than Math.pow()
@@ -81,7 +78,7 @@ public class CoreQuery {
                 JSONObject object = DocumentVector.parseFromLine(entry.getValue());
 
                 context.write(
-                        new Text("Title: " + object.getString("title") + "\tURL: " + object.getString("url")),
+                        new Text("Title: " + object.getString("title") + "\tURL: " + object.getString("url") + "\tRelevance: "),
                         new DoubleWritable(relevance));
             }
         }
