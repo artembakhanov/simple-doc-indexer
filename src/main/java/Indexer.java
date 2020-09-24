@@ -66,7 +66,7 @@ public class Indexer {
             System.exit(1);
         }
 
-        conf.set("idf-type", idfType);
+        conf.set("idfType", idfType);
 
         WordCounter.run(conf, posArgs, verbose);
         IDFEvaluator.run(conf, posArgs, verbose);

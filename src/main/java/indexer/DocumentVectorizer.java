@@ -1,6 +1,7 @@
 package indexer;
 
 
+import lib.Const;
 import lib.DocumentVector;
 import lib.PartPathFilter;
 import lib.Word;
@@ -37,7 +38,7 @@ public class DocumentVectorizer {
         }
     }
 
-    public static class DocumentVectorizerCombiner extends Reducer<Text, Text, Text, Text> {
+    public static class DocumentVectorizerReducer extends Reducer<Text, Text, Text, Text> {
         private static final HashMap<String, Word> words = new HashMap<>();
 
         public void setup(Context context) throws IOException {
@@ -61,9 +62,9 @@ public class DocumentVectorizer {
             for (Text value : values) {
                 Word word = words.get(value.toString());
                 if (!word_counts.containsKey(word.getId())) {
-                    word_counts.put(word.getId(), 1 / word.getIdf());
+                    word_counts.put(word.getId(), word.getIdf());
                 } else {
-                    word_counts.put(word.getId(), word_counts.get(word.getId()) + 1 / word.getIdf());
+                    word_counts.put(word.getId(), word_counts.get(word.getId()) + word.getIdf());
                 }
             }
 
@@ -78,31 +79,22 @@ public class DocumentVectorizer {
         }
     }
 
-    public static class DocumentVectorizerReducer extends Reducer<Text, Text, Text, Text> {
-        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for (Text value : values) {
-                context.write(key, value);
-            }
-        }
-    }
-
     public static boolean run(Configuration conf, String[] args, boolean verbose) throws IOException, ClassNotFoundException, InterruptedException {
         FileSystem fileSystem = FileSystem.get(conf);
 
         Job job = Job.getInstance(conf, "Document Vectorizer");
         job.setJarByClass(DocumentVectorizer.class);
         job.setMapperClass(DocumentVectorizerMapper.class);
-        job.setCombinerClass(DocumentVectorizerCombiner.class);
         job.setReducerClass(DocumentVectorizerReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1] + "/idf"));
+        FileOutputFormat.setOutputPath(job, new Path(args[1], Const.VECTORIZED));
 
 
-        FileStatus[] files = fileSystem.listStatus(new Path(args[1] + "/final"), new PartPathFilter());
+        FileStatus[] files = fileSystem.listStatus(new Path(args[1], Const.WORDS), new PartPathFilter());
         for (FileStatus file : files) {
             job.addCacheFile(file.getPath().toUri());
         }

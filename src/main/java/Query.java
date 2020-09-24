@@ -1,3 +1,4 @@
+import lib.Const;
 import org.apache.commons.cli.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -65,7 +66,7 @@ public class Query {
 
         FileSystem fileSystem = FileSystem.get(conf);
 
-        if (! (fileSystem.exists(new Path(posArgs[0] + Path.SEPARATOR + "index")) & fileSystem.exists(new Path(posArgs[0] + Path.SEPARATOR + "documents")))) {
+        if (! (fileSystem.exists(new Path(posArgs[0], Const.VECTORIZED)) & fileSystem.exists(new Path(posArgs[0],Const.WORDS)))) {
             System.err.println("Indexer file does not contain all necessary files.");
             System.exit(1);
         }

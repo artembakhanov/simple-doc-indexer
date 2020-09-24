@@ -1,9 +1,8 @@
 package indexer;
 
-import com.sun.tools.javac.util.Pair;
+import lib.Const;
 import lib.DocInfo;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -12,9 +11,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 public class IDFEvaluator {
     public static class IDFMapper extends Mapper<Object, Text, Text, Text> {
@@ -24,14 +21,14 @@ public class IDFEvaluator {
         }
     }
 
-    public static class IDFCombiner extends Reducer<Text, Text, Text, Text> {
-        private static int counter = 0;
+    public static class IDFReducer extends Reducer<Text, Text, Text, Text> {
         private static double docNumber;
         private static String idfType;
+        private static int counter = 0;
 
         public void setup(Context context) {
             docNumber = Double.parseDouble(context.getConfiguration().get("docNumber"));
-            idfType = context.getConfiguration().get("idf-type");
+            idfType = context.getConfiguration().get("idfType");
         }
 
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
@@ -40,17 +37,9 @@ public class IDFEvaluator {
                 docCounter += 1;
             }
 
-            double idf = idfType.equals("log") ? 1 / Math.log(docNumber / docCounter) : docCounter;
+            double idf = idfType.equals("log") ? Math.log(docNumber / docCounter) : 1.0 / docCounter;
             context.write(key, new Text(idf + "\t" + counter)); // word - idf - word_id
             counter += 1;
-        }
-    }
-
-    public static class IDFReducer extends Reducer<Text, Text, Text, Text> {
-        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for (Text value : values) {
-                context.write(key, value);
-            }
         }
     }
 
@@ -60,12 +49,11 @@ public class IDFEvaluator {
         Job job = Job.getInstance(conf, "IDF Evaluator");
         job.setJarByClass(IDFEvaluator.class);
         job.setMapperClass(IDFMapper.class);
-        job.setCombinerClass(IDFCombiner.class);
         job.setReducerClass(IDFReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(job, new Path(args[1] + "/temp"));
-        FileOutputFormat.setOutputPath(job, new Path(args[1] + "/final"));
+        FileInputFormat.addInputPath(job, new Path(args[1], Const.TEMP));
+        FileOutputFormat.setOutputPath(job, new Path(args[1], Const.WORDS));
 
         return job.waitForCompletion(verbose);
     }
