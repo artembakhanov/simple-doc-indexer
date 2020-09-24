@@ -1,12 +1,16 @@
 package query;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
 import lib.*;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
@@ -80,9 +84,12 @@ public class CoreQuery {
             for (Map.Entry<Double, String> entry : tmapMap.entrySet()) {
                 Double relevance = entry.getKey();
                 JSONObject object = DocumentVector.parseFromLine(entry.getValue());
-
+                JSONObject result = new JSONObject()
+                        .put("title", object.getString("title"))
+                        .put("url", object.getString("url"))
+                        .put("relevance", relevance);
                 context.write(
-                        new Text("Title: " + object.getString("title") + "\tURL: " + object.getString("url") + " \tRelevance: "),
+                        new Text(result.toString(0).replaceAll("\n", "")),
                         new DoubleWritable(relevance));
             }
         }
@@ -151,6 +158,41 @@ public class CoreQuery {
         job.setOutputValueClass(DoubleWritable.class);
         FileInputFormat.addInputPath(job, new Path(args[0], Const.VECTORIZED));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
-        return job.waitForCompletion(verbose);
+
+        boolean result = job.waitForCompletion(verbose);
+
+
+        if (result) {
+            FileSystem fileSystem = FileSystem.get(conf);
+            FileStatus[] docs = fileSystem.listStatus(new Path(args[1]), new PartPathFilter());
+
+            System.out.format("RESULTS%n");
+            System.out.format("+-----+--------------------------------+------------+%n");
+            System.out.format("| NUM | Title                          | Relevance  |%n");
+            System.out.format("+-----+--------------------------------+------------+%n");
+            String lineFormat = "| %-3d | %-30s | %-10s |%n";
+
+            int resultCounter = 0;
+            for (FileStatus doc: docs) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(fileSystem.open(doc.getPath())));
+                String line = "";
+                while ((line = reader.readLine()) != null) {
+                    JSONObject queryResult = new JSONObject(line.split("\t")[0]);
+                    String title = queryResult.getString("title");
+                    System.out.format(lineFormat,
+                            resultCounter,
+                            (title.length() > 28 ) ? title.substring(0, 28) + ".." : title,
+                            String.format("%.3f", queryResult.getDouble("relevance")));
+
+                    resultCounter += 1;
+                }
+            }
+            System.out.format("+-----+--------------------------------+------------+%n");
+        } else {
+            System.out.println("The program did not finish successfully.");
+            System.exit(1);
+        }
+
+        return result;
     }
 }

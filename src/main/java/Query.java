@@ -20,9 +20,12 @@ public class Query {
         // Optional arguement solver BM25 or Basic
         Option optSolverType = new Option("s", "solver", true, "Solver for query, can be BM25 or Basic");
         Option optHelp = new Option("h", "help", false, "Help message.");
+        Option optNoVerbose = new Option("nv", "no-verbose", false, "Show MapReduce progress output.");
+
 
         options.addOption(optSolverType);
         options.addOption(optHelp);
+        options.addOption(optNoVerbose);
 
         String solverType = "BM25";
 
@@ -48,6 +51,8 @@ public class Query {
                     "", options, "Please note that the solver can be only be 'BM25' or 'Basic'.");
             System.exit(0);
         }
+
+        boolean verbose = !cmd.hasOption(optNoVerbose.getOpt());
 
         if (cmd.hasOption(optSolverType.getOpt())) {
             solverType = cmd.getOptionValue(optSolverType.getOpt());
@@ -81,6 +86,6 @@ public class Query {
         }
 
         conf.set("solver", solverType);
-        CoreQuery.run(conf, posArgs,true);
+        CoreQuery.run(conf, posArgs, verbose);
     }
 }
