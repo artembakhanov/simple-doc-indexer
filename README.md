@@ -2,7 +2,7 @@
 
 # Assignment №1. MapReduce. Simple Text Indexer
 
-Team ZeroTier
+Team mumbai
 
 Artem Bahanov DS18-01 email: a.bahanov@innopolis.university
 
