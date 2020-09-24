@@ -23,6 +23,18 @@ public class Preprocessor {
         }
     }
 
+    public void preprocessBM25(String query, HashMap<String, Word> words) {
+        for (String word: Tokenizer.tokenize(query)) {
+            if (words.containsKey(word)) {
+                Word wordInfo = words.get(word);
+                if (!queryWords.containsKey(wordInfo.getId())) {
+                    // We need to retrieve only IDF of the word in the query for the formula.
+                    queryWords.put(wordInfo.getId(), wordInfo.getIdf());
+                }
+            }
+        }
+    }
+
     public String getString() {
         final Collection<String> elements = Collections2.transform(
                 this.queryWords.entrySet(),
@@ -45,17 +57,5 @@ public class Preprocessor {
         }
 
         return query;
-    }
-
-    public void preprocessBM25(String query, HashMap<String, Word> words) {
-        for (String word: Tokenizer.tokenize(query)) {
-            if (words.containsKey(word)) {
-                Word wordInfo = words.get(word);
-                if (!queryWords.containsKey(wordInfo.getId())) {
-                    // We need to retrieve only IDF of the word in the query for the formula.
-                    queryWords.put(wordInfo.getId(), wordInfo.getIdf());
-                }
-            }
-        }
     }
 }

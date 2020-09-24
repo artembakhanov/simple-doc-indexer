@@ -27,9 +27,11 @@ public class CoreQuery {
 
         private static HashMap<Integer, Double> query;
         private final TreeMap<Double, String> tmapMap = new TreeMap<>();
+        private String solver;
 
         public void setup(Context context) {
             query = Preprocessor.fromString(context.getConfiguration().get("query"));
+            solver = context.getConfiguration().get("solver");
         }
 
         public void map(Object key, Text value, Context context)
@@ -125,12 +127,8 @@ public class CoreQuery {
         // 3 - query text
 
         HashMap<String, Word> words = Vocabulary.loadVocabulary(conf, args[0]);
-        String solver = "BM25";
-        if (args.length > 4) {
-            solver = args[4];
-        }
         Preprocessor preprocessor = new Preprocessor();
-        if (solver.equals("BM25")) {
+        if (conf.get("solver").equals("BM25")) {
             preprocessor.preprocessBM25(args[3], words);
         } else {
             preprocessor.preprocess(args[3], words);
