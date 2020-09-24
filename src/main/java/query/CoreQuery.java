@@ -118,13 +118,11 @@ public class CoreQuery {
         }
     }
 
-    public static boolean run(String[] args, boolean verbose) throws IOException, ClassNotFoundException, InterruptedException {
+    public static boolean run(Configuration conf, String[] args, boolean verbose) throws IOException, ClassNotFoundException, InterruptedException {
         // 0 - indexer output folder
         // 1 - query output folder
         // 2 - query results number
         // 3 - query text
-
-        Configuration conf = new Configuration();
 
         HashMap<String, Word> words = Vocabulary.loadVocabulary(conf, args[0]);
         String solver = "BM25";
@@ -137,7 +135,7 @@ public class CoreQuery {
         } else {
             preprocessor.preprocess(args[3], words);
         }
-        conf.set("solver", solver);
+
         conf.set("query", preprocessor.getString());
         conf.set("n", args[2]);
         conf.set("avgdl", String.valueOf(DocInfo.getInfo(conf, args[0]).snd));
