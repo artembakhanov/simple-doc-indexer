@@ -15,9 +15,9 @@ public class Preprocessor {
             if (words.containsKey(word)) {
                 Word wordInfo = words.get(word);
                 if (queryWords.containsKey(wordInfo.getId())) {
-                    queryWords.put(wordInfo.getId(), queryWords.get(wordInfo.getId()) + 1/wordInfo.getIdf());
+                    queryWords.put(wordInfo.getId(), queryWords.get(wordInfo.getId()) + wordInfo.getIdf());
                 } else {
-                    queryWords.put(wordInfo.getId(), 1/wordInfo.getIdf());
+                    queryWords.put(wordInfo.getId(), wordInfo.getIdf());
                 }
             }
         }

@@ -40,7 +40,7 @@ public class IDFEvaluator {
                 docCounter += 1;
             }
 
-            double idf = idfType.equals("log") ? 1 / Math.log(docNumber / docCounter) : docCounter;
+            double idf = idfType.equals("log") ? Math.log(docNumber / docCounter) : 1.0 / docCounter;
             context.write(key, new Text(idf + "\t" + counter)); // word - idf - word_id
             counter += 1;
         }

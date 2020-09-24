@@ -61,9 +61,9 @@ public class DocumentVectorizer {
             for (Text value : values) {
                 Word word = words.get(value.toString());
                 if (!word_counts.containsKey(word.getId())) {
-                    word_counts.put(word.getId(), 1 / word.getIdf());
+                    word_counts.put(word.getId(), word.getIdf());
                 } else {
-                    word_counts.put(word.getId(), word_counts.get(word.getId()) + 1 / word.getIdf());
+                    word_counts.put(word.getId(), word_counts.get(word.getId()) + word.getIdf());
                 }
             }
 
