@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import lib.DocInfo;
+import lib.*;
 import lib.DocumentVector;
 import lib.Vocabulary;
 import lib.Word;
@@ -147,7 +147,7 @@ public class CoreQuery {
         job.setReducerClass(QueryReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
-        FileInputFormat.addInputPath(job, new Path(args[0] + "/idf/*"));
+        FileInputFormat.addInputPath(job, new Path(args[0], Const.VECTORIZED));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
         return job.waitForCompletion(verbose);
     }

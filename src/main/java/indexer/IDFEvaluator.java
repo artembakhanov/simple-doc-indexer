@@ -1,6 +1,7 @@
 package indexer;
 
 import com.sun.tools.javac.util.Pair;
+import lib.Const;
 import lib.DocInfo;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -31,7 +32,7 @@ public class IDFEvaluator {
 
         public void setup(Context context) {
             docNumber = Double.parseDouble(context.getConfiguration().get("docNumber"));
-            idfType = context.getConfiguration().get("idf-type");
+            idfType = context.getConfiguration().get("idfType");
         }
 
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
@@ -64,8 +65,8 @@ public class IDFEvaluator {
         job.setReducerClass(IDFReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(job, new Path(args[1] + "/temp"));
-        FileOutputFormat.setOutputPath(job, new Path(args[1] + "/final"));
+        FileInputFormat.addInputPath(job, new Path(args[1], Const.TEMP));
+        FileOutputFormat.setOutputPath(job, new Path(args[1], Const.WORDS));
 
         return job.waitForCompletion(verbose);
     }

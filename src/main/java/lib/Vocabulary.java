@@ -15,7 +15,7 @@ public class Vocabulary {
     public static HashMap<String, Word> loadVocabulary(Configuration conf, String path) throws IOException {
         HashMap<String, Word> words = new HashMap<>();
         FileSystem fileSystem = FileSystem.get(conf);
-        FileStatus[] files = fileSystem.listStatus(new Path(path + "/final"),
+        FileStatus[] files = fileSystem.listStatus(new Path(path, Const.WORDS),
                 path1 -> path1.getName().startsWith("part"));
 
         for (FileStatus file : files) {

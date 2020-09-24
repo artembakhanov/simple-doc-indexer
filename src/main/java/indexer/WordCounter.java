@@ -1,7 +1,7 @@
 package indexer;
 
 import com.sun.tools.javac.util.Pair;
-import lib.PartPathFilter;
+import lib.Const;
 import lib.Tokenizer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -88,7 +88,7 @@ public class WordCounter {
         job.setOutputValueClass(Text.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1] + "/temp"));
+        FileOutputFormat.setOutputPath(job, new Path(args[1], Const.TEMP));
 
         boolean result = job.waitForCompletion(verbose);
 

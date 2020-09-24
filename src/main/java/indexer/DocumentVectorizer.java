@@ -1,6 +1,7 @@
 package indexer;
 
 
+import lib.Const;
 import lib.DocumentVector;
 import lib.PartPathFilter;
 import lib.Word;
@@ -99,10 +100,10 @@ public class DocumentVectorizer {
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1] + "/idf"));
+        FileOutputFormat.setOutputPath(job, new Path(args[1], Const.VECTORIZED));
 
 
-        FileStatus[] files = fileSystem.listStatus(new Path(args[1] + "/final"), new PartPathFilter());
+        FileStatus[] files = fileSystem.listStatus(new Path(args[1], Const.WORDS), new PartPathFilter());
         for (FileStatus file : files) {
             job.addCacheFile(file.getPath().toUri());
         }
