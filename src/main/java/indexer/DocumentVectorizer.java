@@ -38,7 +38,7 @@ public class DocumentVectorizer {
         }
     }
 
-    public static class DocumentVectorizerCombiner extends Reducer<Text, Text, Text, Text> {
+    public static class DocumentVectorizerReducer extends Reducer<Text, Text, Text, Text> {
         private static final HashMap<String, Word> words = new HashMap<>();
 
         public void setup(Context context) throws IOException {
@@ -79,21 +79,12 @@ public class DocumentVectorizer {
         }
     }
 
-    public static class DocumentVectorizerReducer extends Reducer<Text, Text, Text, Text> {
-        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for (Text value : values) {
-                context.write(key, value);
-            }
-        }
-    }
-
     public static boolean run(Configuration conf, String[] args, boolean verbose) throws IOException, ClassNotFoundException, InterruptedException {
         FileSystem fileSystem = FileSystem.get(conf);
 
         Job job = Job.getInstance(conf, "Document Vectorizer");
         job.setJarByClass(DocumentVectorizer.class);
         job.setMapperClass(DocumentVectorizerMapper.class);
-        job.setCombinerClass(DocumentVectorizerCombiner.class);
         job.setReducerClass(DocumentVectorizerReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);

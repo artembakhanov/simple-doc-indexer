@@ -35,7 +35,7 @@ public class WordCounter {
         }
     }
 
-    public static class WordCounterCombiner extends Reducer<Text, Text, Text, Text> {
+    public static class WordCounterReducer extends Reducer<Text, Text, Text, Text> {
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             int wordCounter = 0;
 
@@ -47,14 +47,6 @@ public class WordCounter {
             }
 
             context.write(new Text(word), new Text(String.valueOf(wordCounter)));
-        }
-    }
-
-    public static class WordCounterReducer extends Reducer<Text, Text, Text, Text> {
-        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for (Text value : values) {
-                context.write(key, value);
-            }
         }
     }
 
@@ -82,7 +74,6 @@ public class WordCounter {
         job.setMapperClass(WordCounterMapper.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
-        job.setCombinerClass(WordCounterCombiner.class);
         job.setReducerClass(WordCounterReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);

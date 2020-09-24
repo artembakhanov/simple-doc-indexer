@@ -1,10 +1,8 @@
 package indexer;
 
-import com.sun.tools.javac.util.Pair;
 import lib.Const;
 import lib.DocInfo;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -13,9 +11,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 public class IDFEvaluator {
     public static class IDFMapper extends Mapper<Object, Text, Text, Text> {
@@ -25,10 +21,10 @@ public class IDFEvaluator {
         }
     }
 
-    public static class IDFCombiner extends Reducer<Text, Text, Text, Text> {
-        private static int counter = 0;
+    public static class IDFReducer extends Reducer<Text, Text, Text, Text> {
         private static double docNumber;
         private static String idfType;
+        private static int counter = 0;
 
         public void setup(Context context) {
             docNumber = Double.parseDouble(context.getConfiguration().get("docNumber"));
@@ -47,21 +43,12 @@ public class IDFEvaluator {
         }
     }
 
-    public static class IDFReducer extends Reducer<Text, Text, Text, Text> {
-        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for (Text value : values) {
-                context.write(key, value);
-            }
-        }
-    }
-
     public static boolean run(Configuration conf, String[] args, boolean verbose) throws IOException, ClassNotFoundException, InterruptedException {
         DocInfo.getInfo(conf, args[1]);
 
         Job job = Job.getInstance(conf, "IDF Evaluator");
         job.setJarByClass(IDFEvaluator.class);
         job.setMapperClass(IDFMapper.class);
-        job.setCombinerClass(IDFCombiner.class);
         job.setReducerClass(IDFReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
