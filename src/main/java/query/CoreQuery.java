@@ -51,7 +51,7 @@ public class CoreQuery {
                         // Multiplying by itself is always faster than Math.pow()
                         int k1 = 2;
                         double b = 0.75;
-                        relevance += idf * tfidf*(k1 + 1) / (tfidf + k1 * (1 + b * (docLength / avSize - 1)));
+                        relevance +=  tfidf * (k1 + 1) / (tfidf / idf + k1 * (1 + b * (docLength / avSize - 1)));
                     }
                 }
             } else {
@@ -82,7 +82,7 @@ public class CoreQuery {
                 JSONObject object = DocumentVector.parseFromLine(entry.getValue());
 
                 context.write(
-                        new Text("Title: " + object.getString("title") + "\tURL: " + object.getString("url") + "\tRelevance: "),
+                        new Text("Title: " + object.getString("title") + "\tURL: " + object.getString("url") + " \tRelevance: "),
                         new DoubleWritable(relevance));
             }
         }
