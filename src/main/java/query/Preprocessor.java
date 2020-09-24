@@ -12,7 +12,7 @@ public class Preprocessor {
 
     public void preprocess(String query, HashMap<String, Word> words) {
         for (String word: Tokenizer.tokenize(query)) {
-            if (words.containsKey(word)) {
+            if (words.containsKey(word.toLowerCase())) {
                 Word wordInfo = words.get(word);
                 if (queryWords.containsKey(wordInfo.getId())) {
                     queryWords.put(wordInfo.getId(), queryWords.get(wordInfo.getId()) + 1/wordInfo.getIdf());
@@ -25,7 +25,7 @@ public class Preprocessor {
 
     public void preprocessBM25(String query, HashMap<String, Word> words) {
         for (String word: Tokenizer.tokenize(query)) {
-            if (words.containsKey(word)) {
+            if (words.containsKey(word.toLowerCase())) {
                 Word wordInfo = words.get(word);
                 if (!queryWords.containsKey(wordInfo.getId())) {
                     // We need to retrieve only IDF of the word in the query for the formula.
