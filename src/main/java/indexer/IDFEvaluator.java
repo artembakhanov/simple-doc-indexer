@@ -17,6 +17,8 @@ public class IDFEvaluator {
     public static class IDFMapper extends Mapper<Object, Text, Text, Text> {
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] line = value.toString().split("\t");
+
+            // just pass it to reducer, since the number of words of WordCounter output is number of appearances
             context.write(new Text(line[0]), new Text(line[1]));
         }
     }

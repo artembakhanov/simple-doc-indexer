@@ -6,7 +6,9 @@ import lib.DocumentVector;
 import lib.PartPathFilter;
 import lib.Word;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -33,6 +35,7 @@ public class DocumentVectorizer {
 
             String[] tokens = text.split("[^\\p{L}]+");
             for (String token : tokens) {
+                // <document, word> - we want to collect the same words of the same document in one place
                 context.write(new Text(DocumentVector.toLine(id, title, url, tokens.length)), new Text(token.toLowerCase()));
             }
         }
@@ -42,6 +45,8 @@ public class DocumentVectorizer {
         private static final HashMap<String, Word> words = new HashMap<>();
 
         public void setup(Context context) throws IOException {
+            // read words
+
             FileSystem fileSystem = FileSystem.get(context.getConfiguration());
             URI[] cacheFiles = context.getCacheFiles();
 
@@ -59,6 +64,7 @@ public class DocumentVectorizer {
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             TreeMap<Integer, Double> word_counts = new TreeMap<>();
 
+            // calculate IDF
             for (Text value : values) {
                 Word word = words.get(value.toString());
                 if (!word_counts.containsKey(word.getId())) {
@@ -68,13 +74,15 @@ public class DocumentVectorizer {
                 }
             }
 
-            List<String> textList = new ArrayList<String>();
+            List<String> textList = new ArrayList<>();
             for (Map.Entry<Integer, Double> entry : word_counts.entrySet()) {
                 textList.add(entry.getKey() + ":" + entry.getValue());
             }
 
             String[] arrayTemp = new String[textList.size()];
             textList.toArray(arrayTemp);
+
+            // write <void, document in vector representation in JSON>
             context.write(new Text("d"), new Text(DocumentVector.toLine(key.toString(), String.join(";", arrayTemp))));
         }
     }

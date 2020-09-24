@@ -30,6 +30,7 @@ public class WordCounter {
 
             String[] tokens = text.split("[^\\p{L}]+");
             for (String token : tokens) {
+                // <document, word> - we want to collect the same words of the same document in one place
                 context.write(new Text(token.toLowerCase() + ":" + id), new Text("1"));
             }
         }
@@ -51,6 +52,7 @@ public class WordCounter {
     }
 
     public static Pair<Integer, Double> countDocs(Configuration conf, FileStatus[] files) throws IOException {
+        // count average word number and number of docs
         FileSystem fileSystem = FileSystem.get(conf);
         int counter = 0;
         long wordCounter = 0;
