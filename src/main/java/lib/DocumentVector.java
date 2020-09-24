@@ -17,13 +17,13 @@ public class DocumentVector {
         object.put("title", title);
         object.put("url", url);
         object.put("docLength", docLength);
-        return object.toString(0);
+        return object.toString(0).replaceAll("\n", "");
     }
 
     public static String toLine(String key, String vectorized) {
         JSONObject object = new JSONObject(key);
         object.put("vectorized", vectorized);
 
-        return object.toString(0);
+        return object.toString(0).replaceAll("\n", "");
     }
 }
