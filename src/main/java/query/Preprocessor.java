@@ -12,11 +12,15 @@ public class Preprocessor {
 
     public void preprocess(String query, HashMap<String, Word> words) {
         for (String word: Tokenizer.tokenize(query)) {
-            if (words.containsKey(word.toLowerCase())) {
+            word = word.toLowerCase();
+            if (words.containsKey(word)) {
                 Word wordInfo = words.get(word);
+                // Optimisation, for each occurrence of the word we add 1*IDF, which results in n*idf
+                // Where n - number of words
                 if (queryWords.containsKey(wordInfo.getId())) {
                     queryWords.put(wordInfo.getId(), queryWords.get(wordInfo.getId()) + wordInfo.getIdf());
                 } else {
+                    // If the word occurs in the first time in the query
                     queryWords.put(wordInfo.getId(), wordInfo.getIdf());
                 }
             }
@@ -25,7 +29,8 @@ public class Preprocessor {
 
     public void preprocessBM25(String query, HashMap<String, Word> words) {
         for (String word: Tokenizer.tokenize(query)) {
-            if (words.containsKey(word.toLowerCase())) {
+            word = word.toLowerCase();
+            if (words.containsKey(word)) {
                 Word wordInfo = words.get(word);
                 if (!queryWords.containsKey(wordInfo.getId())) {
                     // We need to retrieve only IDF of the word in the query for the formula.
@@ -49,7 +54,7 @@ public class Preprocessor {
 
     public static HashMap<Integer, Double> fromString(String record) {
         if (record == null) record = "";
-        String[] elements = record.split(";"); // todo: fix unknown words
+        String[] elements = record.split(";");
         HashMap<Integer, Double> query = new HashMap<>();
         for (String element: elements) {
             String[] vector = element.split(":");

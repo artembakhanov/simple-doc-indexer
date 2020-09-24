@@ -17,7 +17,7 @@ public class Query {
         Configuration conf = new Configuration();
 
         Options options = new Options();
-
+        // Optional arguement solver BM25 or Basic
         Option optSolverType = new Option("s", "solver", true, "Solver for query, can be BM25 or Basic");
         Option optHelp = new Option("h", "help", false, "Help message.");
 
@@ -28,7 +28,7 @@ public class Query {
 
         CommandLineParser cmdLinePosixParser = new PosixParser();
         CommandLine cmd = null;
-
+        // Mistakes from cmd
         try {
             cmd = cmdLinePosixParser.parse(options, args);
         } catch (UnrecognizedOptionException e) {
@@ -41,7 +41,7 @@ public class Query {
             System.err.println("There was some error while parsing arguments.");
             System.exit(1);
         }
-
+        // Wrong solver name
         if (cmd.hasOption(optHelp.getOpt())) {
             new HelpFormatter().printHelp(
                     "hadoop jar IBDProject.jar Query [OPTIONS] Solver type",
@@ -58,24 +58,24 @@ public class Query {
         }
 
         String[] posArgs = cmd.getArgs();
-
+        // Not enough arguments
         if (posArgs.length < 3) {
             System.err.println("You did not specified the appropriate amount of arguments. Required arguments are: <indexer output folder> <query output folder> <query results number> <query text>");
             System.exit(1);
         }
 
         FileSystem fileSystem = FileSystem.get(conf);
-
+        // Wrong Index Folder
         if (! (fileSystem.exists(new Path(posArgs[0], Const.VECTORIZED)) & fileSystem.exists(new Path(posArgs[0],Const.WORDS)))) {
             System.err.println("Indexer file does not contain all necessary files.");
             System.exit(1);
         }
-
+        // Output already exists
         if (fileSystem.exists(new Path(posArgs[1]))) {
             System.err.println("Output directory already exists. Please choose non existent one. Please see --help.");
             System.exit(1);
         }
-
+        // Number of pages to fetch is not a number
         if (!posArgs[2].matches("[0-9]+")) {
             System.err.println("Number of results contains characters other than numbers");
         }

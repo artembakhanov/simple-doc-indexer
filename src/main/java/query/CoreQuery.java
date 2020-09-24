@@ -37,12 +37,11 @@ public class CoreQuery {
             double relevance = 0.0;
             // I do not create hashmap and search for words in query because it would take the same amount of time
             // as to create a HashMap for each of the word in the document
-            int k1 = 2;
-            double b = 0.75;
             JSONObject object = DocumentVector.parseFromLine(line[1]);
             String vectorized = object.getString("vectorized");
-            int docLength = object.getInt("docLength");
-            if (solver.equals("BM25")) {
+            if (context.getConfiguration().get("solver").equals("BM25")) {
+                // Formula for BM25 and arguments for it
+                int docLength = object.getInt("docLength");
                 for (String element : vectorized.split(";")) {
                     Integer idx = Integer.parseInt(element.split(":")[0]);
                     if (query.containsKey(idx)) {
@@ -50,13 +49,18 @@ public class CoreQuery {
                         Double idf = query.get(idx);
                         double avSize = Double.parseDouble(context.getConfiguration().get("avgdl"));
                         // Multiplying by itself is always faster than Math.pow()
-                        relevance += idf * tfidf*(k1 + 1) / (tfidf + k1* (1 + b * (docLength / avSize - 1)));
+                        int k1 = 2;
+                        double b = 0.75;
+                        relevance += idf * tfidf*(k1 + 1) / (tfidf + k1 * (1 + b * (docLength / avSize - 1)));
                     }
                 }
             } else {
+                // Basic solver
                 for (String element : vectorized.split(";")) {
                     Integer idx = Integer.parseInt(element.split(":")[0]);
                     if (query.containsKey(idx)) {
+                        // Adding relevance for each word that is in the text.
+                        // Words in the text are unique, which is guaranteed from the previous steps.
                         relevance += query.get(idx) * Double.parseDouble(element.split(":")[1]);
                     }
                 }
@@ -125,6 +129,7 @@ public class CoreQuery {
 
         HashMap<String, Word> words = Vocabulary.loadVocabulary(conf, args[0]);
         Preprocessor preprocessor = new Preprocessor();
+        // Preprocessing query for different solver type
         if (conf.get("solver").equals("BM25")) {
             preprocessor.preprocessBM25(args[3], words);
         } else {
@@ -136,7 +141,7 @@ public class CoreQuery {
         conf.set("avgdl", String.valueOf(DocInfo.getInfo(conf, args[0]).snd));
 
 
-
+        //Sending job
         Job job = Job.getInstance(conf, "Query Documents");
         job.setSortComparatorClass(DoubleReversedComparator.class);
         job.setJarByClass(CoreQuery.class);
