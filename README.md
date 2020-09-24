@@ -2,7 +2,7 @@
 
 # Assignment №1. MapReduce. Simple Text Indexer
 
-Team INNOPIDORbI
+Team ZeroTier
 
 Artem Bahanov DS18-01 email: a.bahanov@innopolis.university
 
@@ -22,7 +22,7 @@ Now that we have discussed some matters about Big Data analysis, let us proceed 
 
 Let us briefly consider the overall structure of the program. Here is the diagram that explains it:
 
-![image-20200923162621585](images\image-20200923162621585.png)
+![image-20200923162621585](images/image-20200923162621585.png)
 
 
 
@@ -90,7 +90,7 @@ public static class WordCounterReducer extends Reducer<Text, Text, Text, Text> {
 
 #### Summary
 
-![image-20200924210735548](images\image-20200924210735548.png)
+![image-20200924210735548](images/image-20200924210735548.png)
 
 
 
@@ -130,7 +130,7 @@ public void reduce(Text key, Iterable<Text> values, Context context) throws IOEx
 
 #### Summary
 
-![image-20200924210559550](images\image-20200924210559550.png)
+![image-20200924210559550](images/image-20200924210559550.png)
 
 #### Documents vectorization
 
@@ -190,7 +190,7 @@ public void reduce(Text key, Iterable<Text> values, Context context) throws IOEx
 
 #### Summary
 
-![image-20200924220256995](images\image-20200924220256995.png)
+![image-20200924220256995](images/image-20200924220256995.png)
 
 ### Query Part
 
@@ -232,30 +232,48 @@ public void preprocess(String query, HashMap<String, Word> words) {
 The resulting document vectors are serialized and sent to the map function as well as the vectorized document. During deserialization, only words from the query message are deserialized into HashMap. Then the program iterates over all the word vectors for the document and adds relevance for the words that are present in the query. Document words vector are not deserialized  into the HashMap, because it would take the same amount of execution time, as to iterate for them and compute relevance inline. Program It computes the relevance between one document and search. As we need only n documents, on each machine only n <DocName, Relevance> records are sent to the reducer. It is implemented using TreeMap in Java. If after the insertion of the new element number of tree records becomes more than n, tree drops a record with the minimal relevance.
 
 ```python
-public void map(Object key, Text value, Context context)
+public static class QueryMapper
+            extends Mapper<Object, Text, Text, DoubleWritable> {
+
+        private static HashMap<Integer, Double> query;
+        private final TreeMap<Double, String> tmapMap = new TreeMap<>();
+        private String solver;
+
+        public void setup(Context context) {
+            query = Preprocessor.fromString(context.getConfiguration().get("query"));
+            solver = context.getConfiguration().get("solver");
+        }
+
+        public void map(Object key, Text value, Context context)
                 throws IOException, InterruptedException {
             String[] line = value.toString().split("\t");
             double relevance = 0.0;
-            int k1 = 2;
-            double b = 0.75;
+            // I do not create hashmap and search for words in query because it would take the same amount of time
+            // as to create a HashMap for each of the word in the document
             JSONObject object = DocumentVector.parseFromLine(line[1]);
             String vectorized = object.getString("vectorized");
-            int docLength = object.getInt("docLength");
             if (context.getConfiguration().get("solver").equals("BM25")) {
+                // Formula for BM25 and arguments for it
+                int docLength = object.getInt("docLength");
                 for (String element : vectorized.split(";")) {
                     Integer idx = Integer.parseInt(element.split(":")[0]);
                     if (query.containsKey(idx)) {
-                        Double tfidf = Double.parseDouble(element.split(":")[1]);
+                        double tfidf = Double.parseDouble(element.split(":")[1]);
                         Double idf = query.get(idx);
                         double avSize = Double.parseDouble(context.getConfiguration().get("avgdl"));
                         // Multiplying by itself is always faster than Math.pow()
-                        relevance += idf * tfidf*(k1 + 1) / (tfidf + k1* (1 + b * (docLength / avSize - 1)));
+                        int k1 = 2;
+                        double b = 0.75;
+                        relevance +=  tfidf * (k1 + 1) / (tfidf / idf + k1 * (1 + b * (docLength / avSize - 1)));
                     }
                 }
             } else {
+                // Basic solver
                 for (String element : vectorized.split(";")) {
                     Integer idx = Integer.parseInt(element.split(":")[0]);
                     if (query.containsKey(idx)) {
+                        // Adding relevance for each word that is in the text.
+                        // Words in the text are unique, which is guaranteed from the previous steps.
                         relevance += query.get(idx) * Double.parseDouble(element.split(":")[1]);
                     }
                 }
@@ -275,9 +293,12 @@ public void map(Object key, Text value, Context context)
             for (Map.Entry<Double, String> entry : tmapMap.entrySet()) {
                 Double relevance = entry.getKey();
                 JSONObject object = DocumentVector.parseFromLine(entry.getValue());
-
+                JSONObject result = new JSONObject()
+                        .put("title", object.getString("title"))
+                        .put("url", object.getString("url"))
+                        .put("relevance", relevance);
                 context.write(
-                        new Text("Title: " + object.getString("title") + "\tURL: " + object.getString("url")),
+                        new Text(result.toString(0).replaceAll("\n", "")),
                         new DoubleWritable(relevance));
             }
         }
@@ -324,13 +345,45 @@ public static class QueryReducer
 
 #### Summary
 
-![image-20200923092250287](images\image-20200923092250287.png)
+![image-20200923092250287](images/image-20200923092250287.png)
 
 ## Results
 
 In this section, you can see this program in work via screenshots.
 
+![tg_image_1687528094](images/tg_image_1687528094.jpeg)
 
+![tg_image_2256240998](images/tg_image_2256240998.jpeg)
+
+## How to run it
+
+Indexer:
+
+```bash
+hadoop jar IBDProject.jar Indexer [OPTIONS] <WIKIPEDIA FOLDER> <OUTPUT DIRECTORY>
+```
+
+you might need to add HADOOP_USER_NAME=<username> before the command. Parameters in <> are required to run. Here are the Options:
+
+```
+h,--help               Help message.
+-idf,--idf-type <arg>   Choose IDF type: 'normal' or 'log'.
+-nv,--no-verbose        Show MapReduce progress output.
+```
+
+Query:
+
+```bash
+hadoop jar IBDProject.jar Query [OPTIONS] <INDEXER OUTPUT> <QUERY OUTPUT> <RESULT NUMBER> <QUERY TEXT>
+```
+
+```
+-h,--help           Help message.
+-nv,--no-verbose    Show MapReduce progress output.
+-s,--solver <arg>   Solver for query, can be BM25 or Basic
+```
+
+Indexer Output should be specified the same as the Output Directory for the Indexer
 
 ## Okapi BM25 vs Basic implementation
 
@@ -348,15 +401,13 @@ We used five requests with 10 pages in the response. As a result, we got: Basic:
 
 While Naïve implementation performs relatively well,  Okapi BM25 preforms for roughly 15.5% better.
 
-## Results
-
-As a result of this Assignment our team has gotten a working program which manages to find documents relevant for the search words, specified in the command line. Here you can see the examples of the work of the program:
-
-#TODO Add examples
-
 ## Conclusion
 
 So, during this homework we have successfully applied MapReduce to the Text Indexing and Querying from these indices. We have enhanced our Java and Hadoop MapReduce skills and were able to create a Simple Text Indexer. Some of the improvements to the algorithms were implemented to the original code, preserving the ability to use inefficient versions. On the Innopolis Hadoop cluster you will be able to test everything yourself. Also, there is a link to the [GitHub](https://github.com/artembakhanov/simple-doc-indexer/tree/master/src/main/java/indexer), where you can familiarize with the code of the project.
+
+## Appendix
+
+Basic works better on a small query with specific word (s.t. SAS, Biology, Theorem, etc.), while BM25 works better when we have more words in the query which may include "popular words" (articles, of, etc.)
 
 ## Responsibility for the tasks
 
