@@ -47,7 +47,7 @@ public class Query {
         // Wrong solver name
         if (cmd.hasOption(optHelp.getOpt())) {
             new HelpFormatter().printHelp(
-                    "hadoop jar IBDProject.jar Query [OPTIONS] Solver type",
+                    "hadoop jar IBDProject.jar Query [OPTIONS] <INDEXER OUTPUT> <QUERY OUTPUT> <RESULT NUMBER> <QUERY TEXT>",
                     "", options, "Please note that the solver can be only be 'BM25' or 'Basic'.");
             System.exit(0);
         }
